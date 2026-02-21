@@ -36,7 +36,7 @@ function toggleCell(cell) {
 function tickForward() {
     generateNewGrid()
     updateAliveCellLabel()
-    drawGrid()
+    needsRedraw = true
 }
 
 function autoTick() {
@@ -96,7 +96,7 @@ function updatePanning(event) {
 
     previousX = localX
     previousY = localY
-    updateViewport()
+    needsRedraw = true
 }
 
 function updateZooming(event) {
@@ -115,19 +115,24 @@ function updateZooming(event) {
     viewportTransform.x = screenX - worldX * viewportTransform.scale
     viewportTransform.y = screenY - worldY * viewportTransform.scale
 
-    updateViewport()
+    needsRedraw = true
 }
 
+needsRedraw = true
 function updateViewport() {
-    ctx.setTransform(1, 0, 0, 1, 0, 0)
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    ctx.setTransform(
-        viewportTransform.scale,
-        0, 0,
-        viewportTransform.scale,
-        viewportTransform.x,
-        viewportTransform.y)
-    drawGrid()
+    if (needsRedraw) {
+        ctx.setTransform(1, 0, 0, 1, 0, 0)
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        ctx.setTransform(
+            viewportTransform.scale,
+            0, 0,
+            viewportTransform.scale,
+            viewportTransform.x,
+            viewportTransform.y)
+        drawGrid()
+        needsRedraw = false
+    }
+    requestAnimationFrame(updateViewport)
 }
 
 
@@ -157,7 +162,7 @@ canvas.addEventListener("mousedown", function (event) {
         previousY = event.clientY
     }
 
-    drawGrid()
+    needsRedraw = true
 })
 
 canvas.addEventListener("mousemove", function (event) {
@@ -174,7 +179,7 @@ canvas.addEventListener("mousemove", function (event) {
         if (clickedSquare) {
             updateClickedCell(clickedSquare, modifyingType)
         }
-        drawGrid()
+        needsRedraw = true
     }
     if (dragging) {
         updatePanning(event)
@@ -212,11 +217,11 @@ gridSizeSlider.addEventListener("change", (event) => {
     updateSquareSize()
     grid = generateBlankGrid()
     ctx.clearRect(0, 0, canvas.width, canvas.height)
-    drawGrid()
+    needsRedraw = true
 })
 
 
-drawGrid()
+updateViewport()
 
 // Pre set sample grid, example taken from https://pi.math.cornell.edu/~lipa/mec/lesson6.html 21/02/26
 // 2nd iteration should return [0,0,0],[0,1,1],[0,0,0] 
