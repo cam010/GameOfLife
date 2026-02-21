@@ -4,6 +4,7 @@ let grid_size = 40
 // Interaction with HTML
 const canvas = document.getElementById("gameGrid")
 const ctx = canvas.getContext("2d");
+let viewportTransform = { x: 0, y: 0, scale: 1 }
 
 const tickButton = document.getElementById("tickButton")
 const autoTickButton = document.getElementById("autoTickButton")
@@ -66,51 +67,130 @@ function getCellByCoordinates(mouseX, mouseY) {
     return clickedSquare
 }
 
-// Event Listener taken and adapted from https://www.youtube.com/watch?v=qQO-9WppZ1w 21/02/26
-// canvas.addEventListener("click", function (event) {
+function updateClickedCell(cell, modifyingType) {
+    if (cell.value === modifyingType) {
+        // eg if initial cell mouse clicked was a value, 
+        // only toggle other cells of this value
+        toggleCell(cell)
+    }
+    updateAliveCellLabel()
+}
 
+// variables for panning and zooming 
 let dragging = false
-let modifyingType = "alive" // what cell value the mouse is changing 
-canvas.addEventListener("mousedown", function (e) {
-    const mouseX = event.clientX - canvas.getBoundingClientRect().left
-    const mouseY = event.clientY - canvas.getBoundingClientRect().top
-    let clickedSquare = getCellByCoordinates(mouseX, mouseY)
-    modifyingType = clickedSquare.value
-    dragging = true
+let previousX = 0
+let previousY = 0
 
-    if (clickedSquare) {
-        if (clickedSquare.value === modifyingType) {
-            // eg if initial cell mouse clicked was a value, 
-            // only toggle other cells of this value
+
+// Code for panning and zooming adapted from:
+//   https://harrisonmilbradt.com/blog/canvas-panning-and-zooming
+// @ 21/02/26
+function updatePanning(event) {
+    let localX = event.clientX
+    let localY = event.clientY
+
+    viewportTransform.x += (localX - previousX)
+    viewportTransform.y += (localY - previousY)
+
+    
+
+    previousX = localX
+    previousY = localY
+    updateViewport()
+}
+
+function updateZooming(event) {
+    let screenX = event.clientX - canvas.getBoundingClientRect().left
+    let screenY = event.clientY - canvas.getBoundingClientRect().top
+
+    let zoomFactor = event.deltaY < 0 ? 1.1 : 0.9
+
+    let worldX = (screenX - viewportTransform.x) / viewportTransform.scale
+    let worldY = (screenY - viewportTransform.y) / viewportTransform.scale
+
+    let newScale = viewportTransform.scale * zoomFactor
+    newScale = Math.max(1, Math.min(20, newScale))
+    viewportTransform.scale = newScale
+
+    viewportTransform.x = screenX - worldX * viewportTransform.scale
+    viewportTransform.y = screenY - worldY * viewportTransform.scale
+
+    updateViewport()
+}
+
+function updateViewport() {
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.setTransform(
+        viewportTransform.scale,
+        0, 0,
+        viewportTransform.scale,
+        viewportTransform.x,
+        viewportTransform.y)
+    drawGrid()
+}
+
+
+// variables for changing the cell between alive and dead
+let changingState = false
+let modifyingType = "none" // what cell value the mouse is changing e.g. alive cells only 
+
+canvas.addEventListener("mousedown", function (event) {
+    if (event.button === 0) {
+        let screenX = event.clientX - canvas.getBoundingClientRect().left
+        let screenY = event.clientY - canvas.getBoundingClientRect().top
+
+        let actualX = (screenX - viewportTransform.x) / viewportTransform.scale
+        let actualY = (screenY - viewportTransform.y) / viewportTransform.scale
+
+        let clickedSquare = getCellByCoordinates(actualX, actualY)
+
+        if (clickedSquare) {
+            modifyingType = clickedSquare.value
+            changingState = true
             toggleCell(clickedSquare)
         }
-        updateAliveCellLabel()
+    } else if (event.button === 1 || event.button === 2) {
+        // moving around canvas
+        dragging = true
+        previousX = event.clientX
+        previousY = event.clientY
     }
+
     drawGrid()
 })
 
 canvas.addEventListener("mousemove", function (event) {
-    if (dragging) {
-        const mouseX = event.clientX - canvas.getBoundingClientRect().left
-        const mouseY = event.clientY - canvas.getBoundingClientRect().top
+    if (changingState) {
+        // Some code taken and adapted from https://www.youtube.com/watch?v=qQO-9WppZ1w 21/02/26
+        let screenX = event.clientX - canvas.getBoundingClientRect().left
+        let screenY = event.clientY - canvas.getBoundingClientRect().top
 
-        let clickedSquare = getCellByCoordinates(mouseX, mouseY)
+        let actualX = (screenX - viewportTransform.x) / viewportTransform.scale
+        let actualY = (screenY - viewportTransform.y) / viewportTransform.scale
+
+        let clickedSquare = getCellByCoordinates(actualX, actualY)
 
         if (clickedSquare) {
-            if (clickedSquare.value === modifyingType) {
-                // eg if initial cell mouse clicked was a value, 
-                // only toggle other cells of this value
-                toggleCell(clickedSquare)
-            }
-            updateAliveCellLabel()
+            updateClickedCell(clickedSquare, modifyingType)
         }
         drawGrid()
     }
+    if (dragging) {
+        updatePanning(event)
+    }
 })
 
-window.addEventListener("mouseup", function (e) {
-    dragging = false
+window.addEventListener("mouseup", function (event) {
+    if (event.button === 0) {
+        changingState = false
+    } else if (event.button === 1 || event.button === 2) {
+        dragging = false
+    }
+
 })
+
+canvas.addEventListener("wheel", updateZooming)
 
 tickButton.addEventListener("click", function (event) {
     tickForward()
