@@ -5,13 +5,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Conway's Game of Life</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-    <canvas id="gameGrid" , width="600" , height="600"></canvas>
-    <button id="tickButton">Tick Forward</button>
-    <button id="autoTickButton">Auto Tick</button>
-    
+    <div id="gridDiv">
+        <canvas id="gameGrid" , width="600" , height="600"></canvas>
+    </div>
+
+    <div id="controlsDiv">
+        <div>
+            <label for="gridSize">Grid Size</label>
+            <input type="range" id="gridSizeSlider" name="gridSize" min="3" max="40" value="30">
+        </div>
+        <div>
+            <label id="aliveCellsLabel">Alive Cells: 0</label>
+        </div>
+        <div>
+            <button id="tickButton" class="controlsButton">Tick Forward</button>
+        </div>
+        <div>
+            <button id="autoTickButton" , class="controlsButton">Start Auto Tick</button>
+        </div>
+    </div>
+
     <script src="app.js"></script>
 </body>
 

@@ -1,0 +1,35 @@
+body{
+    background-color: bisque;
+}
+
+#gridDiv {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.controlsDiv {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#controlsDiv {
+    width: 600px;
+    justify-self: center;
+    display: grid;
+    grid-template-columns: 45% 45%;
+    justify-content: center;
+}
+
+#controlsDiv div {
+    text-align: center;
+    margin: 0% 1%;
+    align-self: center;
+}
+
+/* .controlsButton {
+    margin: 5px;
+    margin-top: 0px;
+} */

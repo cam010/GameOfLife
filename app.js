@@ -1,4 +1,4 @@
-const GRIDSIZE = 40
+let grid_size = 40
 
 
 // Interaction with HTML
@@ -9,13 +9,16 @@ const tickButton = document.getElementById("tickButton")
 const autoTickButton = document.getElementById("autoTickButton")
 let autoTicking = false
 
-const squareSize = canvas.width / GRIDSIZE
+const aliveCellLabel = document.getElementById("aliveCellsLabel")
+const gridSizeSlider = document.getElementById("gridSizeSlider")
+
+let squareSize = canvas.width / grid_size
 
 let grid = generateBlankGrid()
 
 function drawGrid() {
-    for (i = 0; i < GRIDSIZE; i++) {
-        for (j = 0; j < GRIDSIZE; j++) {
+    for (i = 0; i < grid_size; i++) {
+        for (j = 0; j < grid_size; j++) {
             square = grid[i][j]
             ctx.fillStyle = (square.value === "alive") ? "black" : "white" // set colour of square
             ctx.strokeStyle = "black"
@@ -31,15 +34,24 @@ function toggleCell(cell) {
 
 function tickForward() {
     generateNewGrid()
+    updateAliveCellLabel()
     drawGrid()
-    console.log("tick")
 }
 
 function autoTick() {
     if (autoTicking) {
         tickForward()
-        setTimeout(autoTick , 1000)
+        setTimeout(autoTick, 1000)
     }
+}
+
+function updateAliveCellLabel() {
+    let aliveCells = calculateAliveCellCount()
+    aliveCellLabel.innerHTML = "Alive Cells: " + aliveCells
+}
+
+function updateSquareSize() {
+    squareSize = canvas.width / grid_size
 }
 
 // Event Listener taken and adapted from https://www.youtube.com/watch?v=qQO-9WppZ1w 21/02/26
@@ -57,8 +69,8 @@ canvas.addEventListener("click", function (event) {
 
     if (clickedSquare) {
         toggleCell(clickedSquare)
+        updateAliveCellLabel()
     }
-    printGridToConsole(grid)
     drawGrid()
 })
 
@@ -68,11 +80,21 @@ tickButton.addEventListener("click", function (event) {
 
 autoTickButton.addEventListener("click", function (event) {
     if (autoTicking) {
+        autoTickButton.innerHTML = "Start Auto Tick"
         autoTicking = false;
         return
     }
+    autoTickButton.innerHTML = "Stop Auto Tick"
     autoTicking = true
     setTimeout(autoTick, 1000)
+})
+
+gridSizeSlider.addEventListener("change", (event) => {
+    grid_size = gridSizeSlider.value
+    updateSquareSize()
+    grid = generateBlankGrid()
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    drawGrid()
 })
 
 
@@ -82,8 +104,8 @@ drawGrid()
 // 2nd iteration should return [0,0,0],[0,1,1],[0,0,0] 
 // where 0 and 1 represent "dead" and "alive" respectively
 function generateSampleGrid() {
-    GRIDSIZE = 3
-    squareSize = canvas.width / GRIDSIZE
+    grid_size = 3
+    squareSize = canvas.width / grid_size
     return [
         [
             { x: 0 * squareSize, y: 0 * squareSize, value: "dead" },
@@ -104,15 +126,22 @@ function generateSampleGrid() {
 }
 
 // Functions below are to do with game logic
+function calculateAliveCellCount() {
+    return grid.flat().reduce(
+        (accumulator, currentCell) => accumulator + (currentCell.value === "alive" ? 1 : 0),
+        0
+    )
+}
+
 function newCellObject(i, j, val) {
     return { x: j * squareSize, y: i * squareSize, value: val }
 }
 
 function generateBlankGrid() {
     initial_grid = []
-    for (i = 0; i < GRIDSIZE; i++) {
+    for (i = 0; i < grid_size; i++) {
         initial_grid.push([])
-        for (j = 0; j < GRIDSIZE; j++) {
+        for (j = 0; j < grid_size; j++) {
             initial_grid[i][j] = newCellObject(i, j, "dead")
         }
     }
@@ -121,8 +150,8 @@ function generateBlankGrid() {
 
 function generateNewGrid() {
     new_grid = generateBlankGrid()
-    for (i = 0; i < GRIDSIZE; i++) {
-        for (j = 0; j < GRIDSIZE; j++) {
+    for (i = 0; i < grid_size; i++) {
+        for (j = 0; j < grid_size; j++) {
             let value = calculateNewCellValue(grid[i][j].value, i, j)
             new_grid[i][j] = newCellObject(i, j, value)
         }
@@ -153,16 +182,16 @@ function getNeighbours(i, j) {
         if (j > 0) {
             ret.push(grid[i - 1][j - 1].value) // north west
         }
-        if (j < GRIDSIZE - 1) {
+        if (j < grid_size - 1) {
             ret.push(grid[i - 1][j + 1].value) // north east
         }
     }
-    if (i < GRIDSIZE - 1) {
+    if (i < grid_size - 1) {
         ret.push(grid[i + 1][j].value) // directly south
         if (j > 0) {
             ret.push(grid[i + 1][j - 1].value) // south west
         }
-        if (j < GRIDSIZE - 1) {
+        if (j < grid_size - 1) {
             ret.push(grid[i + 1][j + 1].value) // south east
         }
     }
@@ -170,7 +199,7 @@ function getNeighbours(i, j) {
     if (j > 0) {
         ret.push(grid[i][j - 1].value) // directly east
     }
-    if (j < GRIDSIZE - 1) {
+    if (j < grid_size - 1) {
         ret.push(grid[i][j + 1].value) // directly west
     }
     return ret
@@ -178,9 +207,9 @@ function getNeighbours(i, j) {
 
 // Useful for testing game logic
 function printGridToConsole(grid) {
-    for (i = 0; i < GRIDSIZE; i++) {
+    for (i = 0; i < grid_size; i++) {
         out = "|"
-        for (j = 0; j < GRIDSIZE; j++) {
+        for (j = 0; j < grid_size; j++) {
             let val = grid[i][j].value
             if (val === "dead") {
                 val = "dead " // make value be 5 characters instead so grid is alligned
@@ -190,11 +219,5 @@ function printGridToConsole(grid) {
         out += ("    " + (i + 1))
         console.log(out)
     }
-    console.log("-" + "------".repeat(GRIDSIZE))
+    console.log("-" + "------".repeat(grid_size))
 }
-
-// printGridToConsole(grid)
-// generateNewGrid(grid)
-// printGridToConsole(grid)
-// generateNewGrid(grid)
-// printGridToConsole(grid)
