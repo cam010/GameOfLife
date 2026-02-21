@@ -54,12 +54,8 @@ function updateSquareSize() {
     squareSize = canvas.width / grid_size
 }
 
-// Event Listener taken and adapted from https://www.youtube.com/watch?v=qQO-9WppZ1w 21/02/26
-canvas.addEventListener("click", function (event) {
-    const mouseX = event.clientX - canvas.getBoundingClientRect().left
-    const mouseY = event.clientY - canvas.getBoundingClientRect().top
-
-    const clickedSquare = grid.flat().find( // adapted to include find()
+function getCellByCoordinates(mouseX, mouseY) {
+    let clickedSquare = grid.flat().find( // adapted to include find()
         (square) =>
             mouseX >= square.x &&
             mouseX <= square.x + squareSize &&
@@ -67,11 +63,53 @@ canvas.addEventListener("click", function (event) {
             mouseY <= square.y + squareSize
     )
 
+    return clickedSquare
+}
+
+// Event Listener taken and adapted from https://www.youtube.com/watch?v=qQO-9WppZ1w 21/02/26
+// canvas.addEventListener("click", function (event) {
+
+let dragging = false
+let modifyingType = "alive" // what cell value the mouse is changing 
+canvas.addEventListener("mousedown", function (e) {
+    const mouseX = event.clientX - canvas.getBoundingClientRect().left
+    const mouseY = event.clientY - canvas.getBoundingClientRect().top
+    let clickedSquare = getCellByCoordinates(mouseX, mouseY)
+    modifyingType = clickedSquare.value
+    dragging = true
+
     if (clickedSquare) {
-        toggleCell(clickedSquare)
+        if (clickedSquare.value === modifyingType) {
+            // eg if initial cell mouse clicked was a value, 
+            // only toggle other cells of this value
+            toggleCell(clickedSquare)
+        }
         updateAliveCellLabel()
     }
     drawGrid()
+})
+
+canvas.addEventListener("mousemove", function (event) {
+    if (dragging) {
+        const mouseX = event.clientX - canvas.getBoundingClientRect().left
+        const mouseY = event.clientY - canvas.getBoundingClientRect().top
+
+        let clickedSquare = getCellByCoordinates(mouseX, mouseY)
+
+        if (clickedSquare) {
+            if (clickedSquare.value === modifyingType) {
+                // eg if initial cell mouse clicked was a value, 
+                // only toggle other cells of this value
+                toggleCell(clickedSquare)
+            }
+            updateAliveCellLabel()
+        }
+        drawGrid()
+    }
+})
+
+window.addEventListener("mouseup", function (e) {
+    dragging = false
 })
 
 tickButton.addEventListener("click", function (event) {
